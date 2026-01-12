@@ -24,6 +24,8 @@ export const createKenBurnsVideo = (imagePath, duration = 5, aspectRatio = '9:16
         // 16:9 -> 1280x720
         const [w, h] = aspectRatio === '16:9' ? [1280, 720] : [720, 1280];
 
+        console.log(`[FFmpeg] Starting Ken Burns. Image: ${imagePath}, Duration: ${duration}, AR: ${aspectRatio}, Target: ${w}x${h}`);
+
         // Simple scale and zoom effect
         // d=${duration*25}: Duration in frames (assuming 25fps)
 
