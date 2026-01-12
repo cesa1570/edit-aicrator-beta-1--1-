@@ -12,6 +12,7 @@ export interface Scene {
   status?: 'pending' | 'generating' | 'completed' | 'failed' | 'skipped';
   assetStage?: 'audio' | 'visual' | 'script';
   statusDetail?: string; // Detailed status like "Polling frame 48..." or "ETA: 12s"
+  backendJobId?: string; // ID for retrieving status from backend
   processingProgress?: number;
   error?: string;
   transition?: 'none' | 'fade' | 'zoom_in' | 'zoom_out' | 'slide_left' | 'slide_right' | 'crossfade';

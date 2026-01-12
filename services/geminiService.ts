@@ -541,7 +541,8 @@ export const generateVideoFromImage = async (
   useMotion: boolean = false,
   aspectRatio: '9:16' | '16:9' = '9:16',
   audioUrl?: string, // NEW: Optional audio URL
-  onProgress?: (status: string, pollCount: number) => void
+  onProgress?: (status: string, pollCount: number) => void,
+  onJobCreated?: (jobId: string) => void // NEW: Callback to save Job ID
 ): Promise<string> => {
   try {
     // Step 1: Start video generation job
@@ -567,43 +568,57 @@ export const generateVideoFromImage = async (
       throw new Error('No jobId returned from server');
     }
 
-    return new Promise((resolve, reject) => {
-      let pollCount = 0;
-      const maxPolls = 300; // 5 minute timeout (1 poll/second)
+    // Notify caller of Job ID for persistence
+    onJobCreated?.(startData.jobId);
 
-      const pollInterval = setInterval(async () => {
-        try {
-          pollCount++;
-          onProgress?.('generating', pollCount);
-
-          const statusRes = await fetch(`/api/check-status/${startData.jobId}`);
-          const statusData = await statusRes.json();
-
-          if (statusData.status === 'succeeded') {
-            clearInterval(pollInterval);
-            const videoUrl = Array.isArray(statusData.output)
-              ? statusData.output[0]
-              : statusData.output;
-            resolve(videoUrl);
-          } else if (statusData.status === 'failed') {
-            clearInterval(pollInterval);
-            reject(new Error(statusData.error || 'Video generation failed'));
-          } else if (pollCount >= maxPolls) {
-            clearInterval(pollInterval);
-            reject(new Error('Video generation timed out'));
-          }
-          // else continue polling (status: 'starting' or 'processing')
-        } catch (pollError: any) {
-          clearInterval(pollInterval);
-          reject(new Error('Polling error: ' + pollError.message));
-        }
-      }, 1000); // Poll every 1 second
-    });
+    return pollVideoStatus(startData.jobId, onProgress);
 
   } catch (error: any) {
     console.error('generateVideoFromImage error:', error);
     throw error;
   }
+};
+
+/**
+ * Polls the backend for video job status until completion.
+ * Can be used to resume monitoring disconnected jobs.
+ */
+export const pollVideoStatus = async (
+  jobId: string,
+  onProgress?: (status: string, pollCount: number) => void
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    let pollCount = 0;
+    const maxPolls = 600; // 10 minutes timeout extended for queue
+
+    const pollInterval = setInterval(async () => {
+      try {
+        pollCount++;
+        onProgress?.('generating', pollCount);
+
+        const statusRes = await fetch(`/api/check-status/${jobId}`);
+        const statusData = await statusRes.json();
+
+        if (statusData.status === 'succeeded') {
+          clearInterval(pollInterval);
+          const videoUrl = Array.isArray(statusData.output)
+            ? statusData.output[0]
+            : statusData.output;
+          resolve(videoUrl);
+        } else if (statusData.status === 'failed') {
+          clearInterval(pollInterval);
+          reject(new Error(statusData.error || 'Video generation failed'));
+        } else if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          reject(new Error('Video generation timed out'));
+        }
+        // else continue polling
+      } catch (pollError: any) {
+        clearInterval(pollInterval);
+        reject(new Error('Polling error: ' + pollError.message));
+      }
+    }, 2000); // Poll every 2 seconds
+  });
 };
 
 /**

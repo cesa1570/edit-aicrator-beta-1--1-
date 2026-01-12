@@ -66,7 +66,7 @@ router.post('/generate-video', async (req, res) => {
                 } else {
                     // Static Ken Burns (FFmpeg)
                     console.log(`Job ${jobId}: Generating Ken Burns...`);
-                    videoPath = await createKenBurnsVideo(tempImage, 5);
+                    videoPath = await createKenBurnsVideo(tempImage, 5, aspectRatio);
                 }
 
                 jobs[jobId].progress = 70;

@@ -3,7 +3,7 @@ import { ProjectState, GeneratorMode, Scene, SubtitleStyle, ScriptData } from '.
 import PaymentModal from './PaymentModal';
 import { CREDIT_COSTS } from '../services/stripeService';
 
-import { generateShortsScript, generateImageForScene, generateVoiceover, generateVideoFromImage, generateVideoForScene, ERR_INVALID_KEY, refineVisualPrompt } from '../services/geminiService';
+import { generateShortsScript, generateImageForScene, generateVoiceover, generateVideoFromImage, generateVideoForScene, ERR_INVALID_KEY, refineVisualPrompt, pollVideoStatus } from '../services/geminiService';
 import { uploadBase64ToSupabase } from '../services/uploadService';
 // import { generateVideoWan } from '../services/wanService'; // Removed: service does not exist
 import { decodeAudioData } from '../utils/audioUtils';
@@ -118,6 +118,33 @@ const ShortsCreator: React.FC<ShortsCreatorProps> = ({ initialTopic, initialLang
   }, [bgmFile]);
 
   useEffect(() => { setSaveStatus('draft'); }, [selectedVoice, selectedStyle, subtitleStyle, bgmVolume, hideSubtitles, selectedTextModel]);
+
+  // Resume Pending Jobs on Load
+  useEffect(() => {
+    if (!state.script) return;
+    state.script.scenes.forEach(scene => {
+      // If scene has backendJobId but not completed, resume polling
+      if (scene.backendJobId && scene.status !== 'completed' && !scene.videoUrl) {
+        console.log(`Resuming job monitor for scene ${scene.id}: ${scene.backendJobId}`);
+        updateScene(scene.id, { status: 'generating', statusDetail: "Resuming..." });
+
+        pollVideoStatus(scene.backendJobId, (status, poll) => {
+          updateScene(scene.id, { statusDetail: `Resumed... ${poll * 5}%` });
+        }).then(videoUrl => {
+          updateScene(scene.id, {
+            status: 'completed',
+            videoUrl: videoUrl,
+            processingProgress: 100,
+            statusDetail: "Ready"
+          });
+          handleSaveProject();
+        }).catch(err => {
+          console.error("Resumed job failed", err);
+          updateScene(scene.id, { status: 'failed', error: err.message });
+        });
+      }
+    });
+  }, []); // Run once on mount (when project loads)
 
   const [isInitialGenerating, setIsInitialGenerating] = useState(false);
 
@@ -248,6 +275,11 @@ const ShortsCreator: React.FC<ShortsCreatorProps> = ({ initialTopic, initialLang
             audioUrlVal, // Pass audio to merge
             (status, poll) => {
               updateScene(scene.id, { statusDetail: `Rendering... ${poll * 5}%` });
+            },
+            (jobId) => {
+              // On Job Created: Save ID for persistence
+              updateScene(scene.id, { backendJobId: jobId, statusDetail: "Queued..." });
+              handleSaveProject(); // Save to DB
             }
           );
         }
@@ -431,51 +463,7 @@ const ShortsCreator: React.FC<ShortsCreatorProps> = ({ initialTopic, initialLang
             <Download size={20} /> Final Render (Local)
           </button>
 
-          <button
-            onClick={async () => {
-              if (!state.script) return;
-              if (confirm("Deploy this video to the Autonomous Pipeline? It will be rendered and uploaded automatically.")) {
-                try {
-                  setSaveStatus('saving');
-                  // 1. Ensure Saved
-                  const projectData: ProjectData = { id: state.id || `shorts-${Date.now()}`, type: 'shorts', title: state.script.title, topic: state.topic, lastUpdated: Date.now(), config: { mode, aspectRatio, language, selectedVoice, selectedVisualModel, selectedTextModel, selectedStyle, subtitleStyle, bgmName, bgmVolume, hideSubtitles, voiceSpeed: 1.1 }, script: state.script };
-                  await saveProject(projectData);
-                  setState(prev => ({ ...prev, id: projectData.id }));
 
-                  // 2. Add to Queue
-                  const tagArray = state.script.hashtags || ["Shorts", "AI"];
-                  const description = state.script.longDescription || state.script.description || state.topic;
-
-                  await addToQueue({
-                    id: projectData.id,
-                    projectId: projectData.id,
-                    projectType: 'shorts',
-                    metadata: {
-                      title: state.script.seoTitle || state.script.title,
-                      description: description,
-                      tags: tagArray,
-                      privacy_status: 'private' // Safety default
-                    },
-                    status: 'pending', // AutomationEngine will pick this up
-                    progress: 0,
-                    system_note: "Manual Deployment from ShortsFactory",
-                    addedAt: Date.now(),
-                    queued_at: new Date().toISOString()
-                  });
-
-                  setSaveStatus('saved');
-                  alert("🚀 Deployed to Auto-Pilot Queue! Check the 'Hub' or 'Youtube Manager' to monitor progress.");
-                } catch (e: any) {
-                  alert("Deployment Failed: " + e.message);
-                  setSaveStatus('error');
-                }
-              }
-            }}
-            disabled={completedCount === 0 || isExporting}
-            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95 transition-all hover:bg-indigo-500 shadow-indigo-900/40"
-          >
-            <Rocket size={20} /> Deploy to Auto-Pilot
-          </button>
 
         </div>
       </div>

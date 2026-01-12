@@ -15,22 +15,27 @@ const getOutputPath = (prefix) => path.join(RENDER_DIR, `${prefix}_${Date.now()}
  * Applies a Ken Burns (Zoom/Pan) effect to an image and creates a video.
  * Constrained to 720p (1280x720) for RAM optimization.
  */
-export const createKenBurnsVideo = (imagePath, duration = 5) => {
+export const createKenBurnsVideo = (imagePath, duration = 5, aspectRatio = '9:16') => {
     return new Promise((resolve, reject) => {
         const outputPath = getOutputPath('kenburns');
 
+        // Determine resolution based on AR
+        // 9:16 -> 720x1280
+        // 16:9 -> 1280x720
+        const [w, h] = aspectRatio === '16:9' ? [1280, 720] : [720, 1280];
+
         // Simple scale and zoom effect
-        // zoompad=0: No padding
         // d=${duration*25}: Duration in frames (assuming 25fps)
-        // scale=1280:720 (Force 720p)
 
         ffmpeg(imagePath)
             .loop(duration)
             .fps(25)
             .videoFilters([
-                'scale=1280:720:force_original_aspect_ratio=increase',
-                'crop=1280:720',
-                `zoompan=z='min(zoom+0.0015,1.5)':d=${duration * 25}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1280x720`
+                // Scale to fit target box, properly dealing with padding if needed
+                `scale=${w}:${h}:force_original_aspect_ratio=increase`,
+                `crop=${w}:${h}`,
+                // Zoompan needs exact resolution in 's' parameter
+                `zoompan=z='min(zoom+0.0015,1.5)':d=${duration * 25}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${w}x${h}`
             ])
             .outputOptions('-c:v libx264')
             .outputOptions('-pix_fmt yuv420p')
