@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <img src="logo_new.png" class="app-logo">
+                <div>
+                    <h1>AI Creator Bot <span class="version">v2.6.2</span></h1>
+                    <span class="badge">LIFETIME</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn">↻</button>
+                <button class="icon-btn">⚙</button>
+            </div>
+        </header>
+
+        <div class="scroll-content">
+            <!-- Section: Product Info -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🛍️ ข้อมูลสินค้า (Product Info)</h3>
+                </div>
+                <div class="grid-2-col">
+                    <div class="placeholder-box" id="product-preview">
+                        <div class="icon">🖼️</div>
+                        <span>รูปสินค้า (จากหน้าเว็บ)</span>
+                    </div>
+                    <div class="placeholder-box">
+                        <div class="icon">👤</div>
+                        <span>เลือกตัวละคร / โมเดล</span>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button id="scrapeBtn" class="secondary-btn">🔍 ค้นหาและเลือกสินค้า</button>
+                    <button class="secondary-btn">ไม่เลือก (ใช้ AI สร้าง)</button>
+                </div>
+
+                <div class="form-group">
+                    <label>จำนวนวิดีโอต่อสินค้า:</label>
+                    <input type="number" value="1" min="1" max="10">
+                </div>
+
+                <div class="toggle-row">
+                    <span>📝 ข้อความบนภาพปก</span>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <span>🎙️ บทพูด (Voice Script)</span>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section: UGC Model -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>💃 โมเดล UGC <span class="badge-green">เปิดใช้งาน</span></h3>
+                </div>
+                <div class="grid-2-col">
+                    <div class="input-group">
+                        <label>ประเภทตัวละคร</label>
+                        <select id="ugc-gender">
+                            <option>สุ่มชาย / หญิง</option>
+                            <option>ผู้หญิง (Female)</option>
+                            <option>ผู้ชาย (Male)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>เชื้อชาติ (Nationality)</label>
+                        <select id="ugc-nation">
+                            <option>ไทย (Thai)</option>
+                            <option>เกาหลี (Korean)</option>
+                            <option>ญี่ปุ่น (Japanese)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>ช่วงอายุ</label>
+                        <select id="ugc-age">
+                            <option>วัยนักศึกษา (19-24)</option>
+                            <option>วัยทำงาน (25-35)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>รูปร่าง</label>
+                        <select id="ugc-body">
+                            <option>หุ่นปกติ (Standard)</option>
+                            <option>ผอมเพรียว (Slim)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Video Settings -->
+            <div class="panel">
+                <div class="grid-2-col">
+                    <div class="input-group">
+                        <label>📱 สัดส่วนภาพ</label>
+                        <select id="video-ratio">
+                            <option>แนวตั้ง (9:16)</option>
+                            <option>แนวนอน (16:9)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>🖼️ จำนวนรูป</label>
+                        <select id="video-img-count">
+                            <option>2 รูป</option>
+                            <option>4 รูป</option>
+                            <option>8 รูป</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>🎨 ธีมภาพ (Visual Theme)</label>
+                    <select id="visual-theme">
+                        <option value="Cinematic">Cinematic Master</option>
+                        <option value="Marvel">Marvel Comic</option>
+                        <option value="MangaClassic">Classic Manga</option>
+                        <option value="Anime">Neo Anime</option>
+                        <option value="Cyberpunk">Cyberpunk Edgy</option>
+                        <option value="Horror">Atmospheric Horror</option>
+                        <option value="Documentary">Nature / Documentary</option>
+                        <option value="Unreal">Unreal Engine 5</option>
+                        <option value="JunjiIto">Horror Manga (Junji Ito)</option>
+                        <option value="Lego">Lego / Brick</option>
+                        <option value="Disney">Pixar Magic</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>🎥 การเคลื่อนไหว (Camera)</label>
+                    <select id="video-camera">
+                        <option>Static (กล้องนิ่ง)</option>
+                        <option>Slow Pan (แพนช้าๆ)</option>
+                        <option>Zoom In (ซูมเข้า)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section: Controls -->
+            <div class="panel control-panel">
+                <div class="toggle-row">
+                    <span>⚡ โหมดอัตโนมัติ (Auto Mode)</span>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="btn-group">
+                    <button class="outline-btn">Get Video Prompt</button>
+                    <button class="outline-btn">Get Image Prompt</button>
+                </div>
+
+                <div class="settings-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> สร้างวิดีโอต่อจากภาพ?
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Download ลงเครื่อง
+                    </label>
+                </div>
+
+                <button id="startBtn" class="main-action-btn">
+                    ▶ เริ่มทำงานอัตโนมัติ
+                </button>
+            </div>
+        </div>
+
+        <div id="status-bar">Ready to work...</div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
